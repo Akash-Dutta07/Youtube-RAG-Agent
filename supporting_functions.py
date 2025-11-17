@@ -5,6 +5,7 @@ import re
 import streamlit as st
 
 from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api.proxies import WebshareProxyConfig
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -32,7 +33,12 @@ def extract_video_id(url):
 
 # function to get transcript from the video.
 def get_transcript(video_id, language):
-    ytt_api= YouTubeTranscriptApi()
+    ytt_api= YouTubeTranscriptApi(
+        proxy_config=WebshareProxyConfig(
+            proxy_username=os.getenv("PROXY_USERNAME"),
+            proxy_password=os.getenv("PROXY_PASSWORD"),
+        )
+    )
     try:
         transcript= ytt_api.fetch(video_id, languages=[language])
         full_transcript= " ".join([i.text for i in transcript])
