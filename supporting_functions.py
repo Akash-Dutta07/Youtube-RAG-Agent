@@ -42,7 +42,7 @@ def get_transcript(video_id, language):
     try:
         transcript= ytt_api.fetch(video_id, languages=[language])
         full_transcript= " ".join([i.text for i in transcript])
-        time.sleep(10)
+        time.sleep(40)
         return full_transcript
     except Exception as e:
         st.error(f"Error fething video {e}")
