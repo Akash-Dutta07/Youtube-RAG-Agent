@@ -1,6 +1,14 @@
-__import__("pysqlite3")
 import sys
-sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
+
+# Fix for Streamlit Cloud - ChromaDB needs pysqlite3
+try:
+    import pysqlite3
+    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+except ImportError:
+    # If import fails, provide helpful error message
+    import streamlit as st
+    st.error("SQLite dependency issue. Please ensure pysqlite3-binary is installed.")
+    st.stop()
 
 
 import streamlit as st
