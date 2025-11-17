@@ -8,7 +8,7 @@ from youtube_transcript_api import YouTubeTranscriptApi
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -39,7 +39,8 @@ def get_transcript(video_id, language):
         time.sleep(10)
         return full_transcript
     except Exception as e:
-        st.error(f"Error fething video {e}")
+        st.error(f"Error fetching transcript: {e}")
+        return None
 
 
 
@@ -59,7 +60,7 @@ def translate_transcript(transcript):
         - Full meaning and context (no omissions, no additions).
         - Tone and style (formal/informal, emotional/neutral as in original).
         - Nuances, idioms, and cultural expressions (adapt appropriately while keeping intent).
-        - Speaker’s voice (same perspective, no rewriting into third-person).
+        - Speaker's voice (same perspective, no rewriting into third-person).
         Do not summarize or simplify. The translation should read naturally in the target language but stay as close as possible to the original intent.
 
         Transcript:
@@ -141,16 +142,26 @@ def generate_notes(transcript):
 
 # FUNCTION TO CREATE CHUNKS
 def create_chunks(transcript):
-    text_splitters= RecursiveCharacterTextSplitter(chunk_size=10000,chunk_overlap=1000)
+    text_splitters= RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=1000)
     doc= text_splitters.create_documents([transcript])
     return doc
 
 
 # function to create embedding and store it into an vector space.
 def create_vector_store(docs):
-    embedding= GoogleGenerativeAIEmbeddings(model="models/embedding-001", transport="grpc" )
-    vector_store= Chroma.from_documents(docs, embedding)
-    return vector_store
+    try:
+        # Use local embeddings - completely free, no API calls!
+        embedding = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/all-MiniLM-L6-v2",
+            model_kwargs={'device': 'cpu'}  # Use 'cuda' if you have GPU
+        )
+        
+        vector_store = Chroma.from_documents(docs, embedding)
+        return vector_store
+        
+    except Exception as e:
+        st.error(f"Error creating vector store: {e}")
+        return None
 
 
 #RAG FUNCTION
@@ -161,10 +172,10 @@ def rag_answer(question, vectorstore):
     prompt = ChatPromptTemplate.from_template("""
                 You are a kind, polite, and precise assistant.
                 - Begin with a warm and respectful greeting (avoid repeating greetings every turn).
-                - Understand the user’s intent even with typos or grammatical mistakes.
+                - Understand the user's intent even with typos or grammatical mistakes.
                 - Answer ONLY using the retrieved context.
                 - If answer not in context, say:
-                  "I couldn’t find that information in the database. Could you please rephrase or ask something else?"
+                  "I couldn't find that information in the database. Could you please rephrase or ask something else?"
                 - Keep answers clear, concise, and friendly.
 
                 Context:

@@ -31,7 +31,6 @@ with st.sidebar:
 
     submit_button = st.button("✨ Start Processing")
     st.markdown("---")
-    # The "New Chat" button has been removed from here.
 
 # --- Main Page ---
 st.title("YouTube Content Synthesizer")
@@ -48,32 +47,41 @@ if submit_button:
             with spinner("Step 1/3 : Fetching Transcript....."):
                 full_transcript= get_transcript(video_id, language)
 
+            if full_transcript:
                 if language!="en":
                     with spinner("Step 1.5/3 : Translating Transcript into English, This may take few moments......"):
                         full_transcript= translate_transcript(full_transcript)
 
 
-            if task_option=="Notes For You":
-                with spinner("Step 2/3: Extracting important Topics..."):
-                    import_topics= get_important_topics(full_transcript)
-                    st.subheader("Important Topics")
-                    st.write(import_topics)
-                    st.markdown("---")
+                if task_option=="Notes For You":
+                    with spinner("Step 2/3: Extracting important Topics..."):
+                        import_topics= get_important_topics(full_transcript)
+                        st.subheader("Important Topics")
+                        st.write(import_topics)
+                        st.markdown("---")
 
-                with spinner("Step 3/3 : Generating Notes for you."):
-                    notes= generate_notes(full_transcript)
-                    st.subheader("Notes for you")
-                    st.write(notes)
+                    with spinner("Step 3/3 : Generating Notes for you."):
+                        notes= generate_notes(full_transcript)
+                        st.subheader("Notes for you")
+                        st.write(notes)
 
-                st.success("Summary and Notes Generated.")
+                    st.success("Summary and Notes Generated.")
 
-            if task_option == "Chat with Video":
-                with st.spinner("Step 2/3: Creating chunks and vector store...."):
-                    chunks = create_chunks(full_transcript)
-                    vectorstore = create_vector_store(chunks)
-                    st.session_state.vector_store = vectorstore
-                st.session_state.messages=[]
-                st.success('Video is ready for chat.....')
+                if task_option == "Chat with Video":
+                    with st.spinner("Step 2/3: Creating chunks and vector store...."):
+                        chunks = create_chunks(full_transcript)
+                        vectorstore = create_vector_store(chunks)
+                        
+                        if vectorstore is not None:
+                            st.session_state.vector_store = vectorstore
+                            st.session_state.messages=[]
+                            st.success('Video is ready for chat.....')
+                        else:
+                            st.error("Failed to create vector store. Please try again.")
+            else:
+                st.error("Failed to fetch transcript. Please check the video ID and language code.")
+    else:
+        st.warning("Please enter both YouTube URL and language code.")
 
 
 # chatbot session
@@ -94,6 +102,9 @@ if task_option=="Chat with Video" and "vector_store" in st.session_state:
             st.write(prompt)
 
         with st.chat_message('assistant'):
-           response= rag_answer(prompt,st.session_state.vector_store)
-           st.write(response)
-        st.session_state.messages.append({'role': 'assistant', 'content':response})
+            response= rag_answer(prompt, st.session_state.vector_store)
+            if response:
+                st.write(response)
+                st.session_state.messages.append({'role': 'assistant', 'content':response})
+            else:
+                st.error("Failed to generate response. Please try again.")
