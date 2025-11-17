@@ -19,5 +19,3 @@ langchainhub
 pypdf
 rapidocr-onnxruntime
 requests
-pysqlite3-binary==0.5.2.post1
-chromadb==0.4.22

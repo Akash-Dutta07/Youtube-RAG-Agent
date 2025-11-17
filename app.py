@@ -1,17 +1,6 @@
-import sys
-
-# Fix for Streamlit Cloud - ChromaDB needs pysqlite3
-# This must happen before any other imports that might use sqlite3
-try:
-    __import__('pysqlite3')
-    import pysqlite3
-    sys.modules['sqlite3'] = pysqlite3
-except ImportError:
-    pass  # Will use system sqlite3
-
 import streamlit as st
 from streamlit import spinner
-
+from streamlit.web.server.server import server_port_is_manually_set
 
 from supporting_functions import (
      extract_video_id,
@@ -42,10 +31,13 @@ with st.sidebar:
 
     submit_button = st.button("✨ Start Processing")
     st.markdown("---")
+    # The "New Chat" button has been removed from here.
 
 # --- Main Page ---
 st.title("YouTube Content Synthesizer")
 st.markdown("Paste a video link and select a task from the sidebar.")
+
+
 
 
 # --- Processing Flow ---
